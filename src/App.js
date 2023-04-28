@@ -13,7 +13,7 @@ import { auth } from './pages/firebase'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import ProtectedRoute from './components/ProtectedRoute.js'
 import './pages/Login.css'
-
+//start the app
 function App() {
   const [user] = useAuthState(auth)
   return (
