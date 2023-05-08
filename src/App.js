@@ -13,9 +13,11 @@ import { auth } from './pages/firebase'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import ProtectedRoute from './components/ProtectedRoute.js'
 import './pages/Login.css'
+import { useSelector, useDispatch } from 'react-redux'
 //start the app
 function App() {
-  const [user] = useAuthState(auth)
+  /* const [user] = useAuthState(auth) */
+  let user = useSelector((state) => state.user?.value)
   return (
     <div className="app">
       <BrowserRouter>

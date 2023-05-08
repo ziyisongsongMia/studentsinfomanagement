@@ -28,6 +28,7 @@ import {
 import { db } from '../pages/firebase.js'
 import { useSelector, useDispatch } from 'react-redux'
 import { updateCourses } from '../redux/coursesSlice.js'
+import axios from 'axios'
 
 export default function CoursesInfo() {
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -49,92 +50,65 @@ export default function CoursesInfo() {
     setIsModalOpen(false)
   }
 
-  /*  const getAllCourses = async () => {
-    let ref = collection(db, 'coursesTable')
-    let allCourses = []
-    let newStudentsArr = onSnapshot(ref, (snapshot) => {
-      snapshot.docs.forEach((doc) => {
-        allCourses.push({ ...doc.data() })
-      })
-    })
-    
-    
-    return allCourses
-  }
- */
   /////////Edit/////////////////////////////////////////////////////
   const HandleEdit = (record) => {
-    /* console.log(record) */
     showModal()
     setAddOrEdit('edit')
     setCurCourseObj(record)
   }
 
   const HandleEditFinish = async (values) => {
-    /*  console.log(values)
-    console.log(curCourseObj) */
-
     const newValues = {
       ...values,
       key: curCourseObj.key,
       id: curCourseObj.id,
     }
 
-    /*    let courses = getAllCourses()
-    console.log(courses) */
+    try {
+      await axios.put(
+        `http://localhost:3001/layout/CoursesInfo/${newValues.id}`,
+        newValues
+      )
+    } catch (err) {
+      console.log(err)
+    }
 
-    await updateDoc(doc(db, 'coursesTable', newValues.id), newValues)
     setCurCourseObj(newValues)
 
-    /* // let localStorageArr = JSON.parse(localStorage.getItem('courses') || [])
-    let findIndex = localStorageArr.findIndex(
-      (item) => item.key === curCourseObj.key
-    )
-    if (findIndex > -1) {
-      localStorageArr[findIndex] = { ...newValues }
+    let newArr = []
+    try {
+      const res = await axios.get(`http://localhost:3001/layout/CoursesInfo`)
+      console.log(res.data)
+      newArr.push(...res.data)
+    } catch (err) {
+      console.log(err)
     }
-    localStorage.setItem('courses', JSON.stringify(localStorageArr)) */
-    let ref = collection(db, 'coursesTable')
 
-    onSnapshot(ref, (snapshot) => {
-      let courses = [] //一定要在里面，否则会有相同的key?
-      snapshot.docs.forEach((doc) => {
-        courses.push({ ...doc.data() })
-      })
-
-      /* console.log('results', courses) */
-      setCoursesData(courses) //为什么一定要在里面？
-      dispatch(updateCourses(courses))
-    })
-
+    setCoursesData(newArr)
+    dispatch(updateCourses(newArr))
     handleCancel()
   }
   ///////Edit is over//////////////////
 
   ///////Delete starts///////////////////////
   const HandleDelete = async (record) => {
-    /* console.log(record)
-    console.log(record.id) */
-    const ref1 = doc(db, 'coursesTable', record.id)
-    await deleteDoc(ref1)
-    /*    let localStorageArr = JSON.parse(localStorage.getItem('courses'))
-    let RemainingCourses = localStorageArr.filter(
-      (obj) => obj.key !== record.key
-    )
-    console.log(RemainingCourses)
-    setCoursesData(RemainingCourses)
-    localStorage.setItem('courses', JSON.stringify(RemainingCourses)) */
+    try {
+      await axios.delete(
+        `http://localhost:3001/layout/CoursesInfo/${record.id}`
+      )
+    } catch (err) {
+      console.log(err)
+    }
 
-    const ref2 = collection(db, 'coursesTable')
-    await getDocs(ref2).then((snapshot) => {
+    try {
       let coursesLeft = []
-      snapshot.docs.forEach((doc) => {
-        coursesLeft.push({ ...doc.data() })
-      })
+      const res = await axios.get('http://localhost:3001/layout/CoursesInfo')
+      coursesLeft.push(...res.data)
       dispatch(updateCourses(coursesLeft))
       setCoursesData(coursesLeft)
-      /*  console.log(coursesLeft) */
-    })
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   ///////Delete ends////////////////////////
@@ -144,28 +118,26 @@ export default function CoursesInfo() {
   const HandleAddCourseFinish = async (values) => {
     let val = values
     val.key = uuid()
+    val.id = uuid()
 
-    const AddRes = await addDoc(collection(db, 'coursesTable'), val)
-    const AddId = AddRes.id
-    const AddRef = doc(db, 'coursesTable', AddId)
-    await updateDoc(AddRef, {
-      id: AddId,
-    })
+    try {
+      await axios.post('http://localhost:3001/layout/CoursesInfo', val)
+    } catch (err) {
+      console.log(err)
+    }
 
-    let courses = []
-    const ref = collection(db, 'coursesTable')
-    await getDocs(ref).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        courses.push({ id: doc.id, ...doc.data() })
-      })
-    )
+    let allCourses = []
+    try {
+      const res = await axios.get('http://localhost:3001/layout/CoursesInfo')
+      console.log(res.data)
+      allCourses.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
 
-    dispatch(updateCourses(courses))
+    dispatch(updateCourses(allCourses))
 
-    /* let newCoursesArr = [...coursesData, val]
-    localStorage.setItem('courses', JSON.stringify(newCoursesArr)) 
-    setCoursesData(newCoursesArr)*/
-    setCoursesData(courses)
+    setCoursesData(allCourses)
     handleCancel()
   }
   ///////Add ends///////////////////////
@@ -254,15 +226,14 @@ export default function CoursesInfo() {
   ]
 
   const getCourses = async () => {
-    // let allCourses = JSON.parse(localStorage.getItem('courses') || '[]')
-    let courses = []
-    const ref = collection(db, 'coursesTable')
-    await getDocs(ref).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        courses.push({ id: doc.id, ...doc.data() })
-      })
-    )
-    setCoursesData(courses)
+    let allCourses = []
+    try {
+      const res = await axios.get('http://localhost:3001/layout/CoursesInfo')
+      allCourses.push(...res.data)
+      setCoursesData(allCourses)
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   useEffect(() => {

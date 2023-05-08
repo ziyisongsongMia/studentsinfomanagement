@@ -16,62 +16,29 @@ import {
 import { db } from '../pages/firebase.js'
 import { useSelector, useDispatch } from 'react-redux'
 import { updateStudents } from '../redux/studentsSlice.js'
+import axios from 'axios'
 
 export default function StudentsAddCourse(props) {
   const dispatch = useDispatch()
 
-  /* const HandleAddCourses = (record) => {
-    props.setIsAddCoursesOpen(true)
-    props.setCurKey(record.key)
-
-    let ref = collection(db, 'studentsTable')
-    let StudentsArr = onSnapshot(ref, (snapshot) => {
-      let allStudents = []
-      snapshot.docs.forEach((doc) => {
-        allStudents.push({ ...doc.data() })
-      })
-      return allStudents
-    })
-
-    props.setCurStudentObj(
-      // JSON.parse(localStorage.getItem('users') || '[]') 
-      StudentsArr.find(
-        (obj) => obj.key === record.key
-      )
-    )
-    console.log(StudentsArr.find((obj) => obj.key === record.key))
-    console.log(record)
-
-    props.setTreeCheckedIdsArr(record.selected_courses_keys)
-  } */
-
-  /*   let ref = collection(db, 'coursesTable')
-  onSnapshot(ref, (snapshot) => {
-    let allCourses = []
-    snapshot.docs.forEach((doc) => {
-      allCourses.push({ ...doc.data() })
-    })
-  }) */
-
+  //classify courses into math and engineering
   let coursesReduxArr = useSelector((state) => state.coursesTable.value || [])
-  const allMathCourses =
-    /* JSON.parse(localStorage.getItem('courses') || '[]') */
-    coursesReduxArr
-      .filter((obj) => obj.department === 'mathematics')
-      .map((math) => {
-        return { title: math.course, key: math.key }
-      }) //210
-  console.log(allMathCourses)
+  const allMathCourses = coursesReduxArr
+    .filter((obj) => obj.department === 'mathematics')
+    .map((math) => {
+      return { title: math.course, key: math.key }
+    }) //210
+  //console.log(allMathCourses)
 
   const allEngineerCourses = coursesReduxArr
     .filter((obj) => obj.department === 'engineering')
     .map((engineering) => {
       return { title: engineering.course, key: engineering.key }
-    }) //210
-  console.log(allEngineerCourses)
+    })
+  //console.log(allEngineerCourses)
 
+  //treeData
   const treeData = [
-    //223
     {
       title: 'Mathematics',
       key: 'mathematics',
@@ -84,54 +51,51 @@ export default function StudentsAddCourse(props) {
     },
   ]
 
+  //cancel window handler
   const HandleAddCoursesCancel = () => {
     props.setIsAddCoursesOpen(false)
-  } //289
+  }
 
-  //get id array of all checked courses
+  //get and save the id array of all checked courses
   const TreeOnCheck = (checkedKeys, info) => {
     console.log('TreeOnCheck', checkedKeys)
     props.setTreeCheckedIdsArr(checkedKeys)
-    /*  console.log(props.curStudentObj) */
   }
 
+  //handle submit
   const HandleAddCoursesFinish = async (values) => {
-    console.log(values)
-    console.log(props.curStudentObj)
-    //get all courses and students arrays from redux
-    /*    let allCourses = useSelector((state) => state.coursesTable.value || [])
-    let allUsersInfo = useSelector((state) => state.studentsTable.value || []) */
+    //get all courses array
     let allCourses = []
-    const ref1 = collection(db, 'coursesTable')
-    await getDocs(ref1).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        allCourses.push({ ...doc.data() })
-      })
-    )
-    console.log('allCourses', allCourses)
+    try {
+      const res = await axios.get(`http://localhost:3001/layout/CoursesInfo`)
+      allCourses.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
 
+    //get all students array
     let allUsersInfo = []
-    const ref2 = collection(db, 'studentsTable')
-    await getDocs(ref2).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        allUsersInfo.push({ ...doc.data() })
-      })
-    )
-    console.log('allUsersInfo', allUsersInfo)
+    try {
+      const res = await axios.get(`http://localhost:3001/layout`)
+      console.log(res.data)
+      allUsersInfo.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
 
-    //get array of all checked courses objects
+    //get all checked courses objects as an array
     let selectedCourses = []
     for (let i = 0; i < props.treeCheckedIdsArr.length; i++) {
       let temp = allCourses.filter(
         (course) => course.key === props.treeCheckedIdsArr[i]
       )
       selectedCourses.push(...temp)
-    } //248
+    }
 
     //get array of all keys of all checked courses
-    let TempSelectedCourseskeys = selectedCourses.map((course) => course.key) //checkedKeys?
-    props.setSelectedCoursesKeys(TempSelectedCourseskeys) //260,checkedKeys?
-    console.log('TempSelectedCourseskeys', TempSelectedCourseskeys)
+    let TempSelectedCourseskeys = selectedCourses.map((course) => course.key)
+    props.setSelectedCoursesKeys(TempSelectedCourseskeys)
+    //console.log('TempSelectedCourseskeys', TempSelectedCourseskeys)
 
     // get array of all names of all checked courses
     const selectedCoursesTitles = selectedCourses
@@ -144,27 +108,65 @@ export default function StudentsAddCourse(props) {
       courses_selected: selectedCoursesTitles,
       selected_courses_keys: TempSelectedCourseskeys,
     }
-    console.log(updatedStudentObj)
     props.setCurStudentObj(updatedStudentObj)
 
-    //update all students array, because of the selected courses keys and names
+    //update all students array, with the new current student object
     let newArr = allUsersInfo.map((obj) =>
       obj.key === props.curKey ? updatedStudentObj : obj
     )
-    console.log(newArr)
-    await updateDoc(
-      doc(db, 'studentsTable', updatedStudentObj.id),
-      updatedStudentObj
-    )
-    /* localStorage.setItem('users', JSON.stringify(newArr)) */
+
     props.setStudentsData(newArr)
     dispatch(updateStudents(newArr))
     props.setIsAddCoursesOpen(false)
+
+    //convert two properties into string and store them:
+    let tempStudentObj = updatedStudentObj
+    console.log(
+      tempStudentObj.selected_courses_keys,
+      typeof tempStudentObj.selected_courses_keys
+    )
+    console.log('test 1')
+    let tempObj = {
+      selected_courses_keys: props.treeCheckedIdsArr.toString(),
+    }
+    console.log('test 2')
+    console.log({
+      ...tempStudentObj,
+      ...tempObj,
+    })
+    console.log('test 3')
+    console.log(
+      'tempStudentObj.courses_selected',
+      tempStudentObj.courses_selected,
+      typeof tempStudentObj.courses_selected
+    ) //string
+    console.log('test 4')
+    // tempStudentObj.courses_selected = tempStudentObj.courses_selected.toString()
+    /*     tempStudentObj.selected_courses_keys =
+      tempStudentObj.selected_courses_keys.toString() */
+    console.log(tempStudentObj)
+    console.log(
+      tempStudentObj.selected_courses_keys,
+      typeof tempStudentObj.selected_courses_keys
+    ) //array with ids
+
+    try {
+      await axios.put(`http://localhost:3001/layout/${tempStudentObj.id}`, {
+        ...tempStudentObj,
+        ...tempObj,
+      })
+      console.log({ ...tempStudentObj })
+      console.log({ ...tempObj })
+      console.log({ ...tempStudentObj, ...tempObj })
+      console.log('test 9')
+    } catch (err) {
+      console.log(err)
+    }
   }
 
   const HandleAddCoursesFinishFailed = (errorInfo) => {
     console.log('Failed:', errorInfo)
-  } //285
+  }
 
   return (
     <div>
@@ -192,7 +194,7 @@ export default function StudentsAddCourse(props) {
             maxWidth: 600,
           }}
           initialValues={{
-            add_course_tree: props.curStudentObj.selected_courses_keys,
+            add_course_tree: props.curStudentObj.selected_courses_keys && [],
           }}
           onFinish={HandleAddCoursesFinish}
           onFinishFailed={HandleAddCoursesFinishFailed}

@@ -30,11 +30,11 @@ function Dashboard() {
     logout()
   }
 
-  useEffect(() => {
+  /*   useEffect(() => {
     if (loading) return
     if (!user) return navigate('/')
-    /*  fetchUserName() */
-  }, [user, loading])
+    //  fetchUserName() 
+  }, [user, loading]) */
 
   return (
     <div className="dashboard">

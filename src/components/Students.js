@@ -32,6 +32,7 @@ import {
 } from 'firebase/firestore'
 import { useSelector, useDispatch } from 'react-redux'
 import { updateStudents } from '../redux/studentsSlice.js'
+import axios from 'axios'
 
 function Students() {
   /*  const [user, loading, error] = useAuthState(auth)
@@ -75,14 +76,14 @@ function Students() {
 
   const getStudents = async () => {
     let allUsers = []
-    const ref = collection(db, 'studentsTable')
-    await getDocs(ref).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        allUsers.push({ ...doc.data() })
-      })
-    )
+    try {
+      const res = await axios.get('http://localhost:3001/layout')
+      allUsers.push(...res.data)
+      setStudentsData(allUsers)
+    } catch (err) {
+      console.log(err)
+    }
     /* let allUsers = JSON.parse(localStorage.getItem('users') || '[]') */
-    setStudentsData(allUsers)
   }
 
   useEffect(() => {
@@ -121,17 +122,28 @@ function Students() {
 
   ///////Delete starts///////////////////////
   const HandleDelete = async (record) => {
-    console.log(record)
+    /*   console.log(record)
     console.log(record.id)
     const ref1 = doc(db, 'studentsTable', record.id)
-    await deleteDoc(ref1)
-    /*     let localStorageArr = JSON.parse(localStorage.getItem('users'))
-    let RemainingUsers = localStorageArr.filter((obj) => obj.key !== record.key)
-    console.log(RemainingUsers)
-   
-    localStorage.setItem('users', JSON.stringify(RemainingUsers)) */
+    await deleteDoc(ref1) */
 
-    const ref2 = collection(db, 'studentsTable')
+    try {
+      await axios.delete(`http://localhost:3001/layout/${record.id}`)
+    } catch (err) {
+      console.log(err)
+    }
+
+    try {
+      let allUsers = []
+      const res = await axios.get('http://localhost:3001/layout')
+      allUsers.push(...res.data)
+      dispatch(updateStudents(allUsers))
+      setStudentsData(allUsers)
+    } catch (err) {
+      console.log(err)
+    }
+
+    /*   const ref2 = collection(db, 'studentsTable')
     await getDocs(ref2).then((snapshot) => {
       let studentsLeft = []
       snapshot.docs.forEach((doc) => {
@@ -139,7 +151,7 @@ function Students() {
       })
       dispatch(updateStudents(studentsLeft))
       setStudentsData(studentsLeft)
-    })
+    }) */
   }
 
   ///////Delete ends////////////////////////
@@ -151,12 +163,18 @@ function Students() {
     setCurKey(record.key)
 
     let allUsers = []
-    const ref = collection(db, 'studentsTable')
+    /* const ref = collection(db, 'studentsTable')
     await getDocs(ref).then((snapshot) =>
       snapshot.docs.forEach((doc) => {
         allUsers.push({ ...doc.data() })
       })
-    )
+    ) */
+    try {
+      const res = await axios.get('http://localhost:3001/layout')
+      allUsers.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
 
     setCurStudentObj(allUsers.find((obj) => obj.key === record.key))
     setTreeCheckedIdsArr(record.selected_courses_keys)

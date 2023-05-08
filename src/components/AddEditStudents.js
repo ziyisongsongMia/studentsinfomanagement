@@ -17,6 +17,7 @@ import {
   onSnapshot,
 } from 'firebase/firestore'
 import { db } from '../pages/firebase.js'
+import axios from 'axios'
 
 function AddEditStudents(props) {
   const dateFormat = 'YYYY-MM-DD'
@@ -42,34 +43,30 @@ function AddEditStudents(props) {
   }
 
   const HandleAddUserFinish = async (values) => {
+    console.log(values)
     let val = values
     val.key = uuid()
-    /*  values['birthdate'] = moment(values.birthdate.$d).format(dateFormat) */
     val.birthdate = val.birthdate.format(dateFormat)
     val.name = val.firstname + ' ' + val.lastname
+    val.id = uuid()
 
-    /*  let newArr = [...props.studentsData, val]
-    //.setItem('users', JSON.stringify(newArr)) */
-
-    /*  AddFieldFire('userss', val) */
-    const AddRes = await addDoc(collection(db, 'studentsTable'), val)
-    const AddId = AddRes.id
-    const AddRef = doc(db, 'studentsTable', AddId)
-    await updateDoc(AddRef, {
-      id: AddId,
-    })
+    try {
+      await axios.post('http://localhost:3001/layout', val)
+    } catch (err) {
+      console.log(err)
+    }
 
     let newArr = []
-    const ref = collection(db, 'studentsTable')
-    await getDocs(ref).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        newArr.push({ id: doc.id, ...doc.data() })
-      })
-    )
+    try {
+      const res = await axios.get('http://localhost:3001/layout')
+      console.log(res.data)
+      newArr.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
 
     dispatch(updateStudents(newArr))
     props.setStudentsData(newArr)
-
     props.handleCancel()
   }
 
@@ -84,36 +81,27 @@ function AddEditStudents(props) {
       id: props.curStudentObj.id,
     }
 
-    await updateDoc(doc(db, 'studentsTable', newValues.id), newValues)
-
-    /*  const querySnapshot2 = await getDocs(qry)
-    const curId = querySnapshot2.docs[0].id
-
-    let usersReduxArrCopy = usersReduxArr
-    let findIndex = usersReduxArrCopy.findIndex(
-      (item) => item.key === props.curStudentObj.key
-    )
-    console.log(usersReduxArrCopy)
-    if (findIndex > -1) {
-      usersReduxArrCopy[findIndex] = { ...newValues }
+    try {
+      await axios.put(`http://localhost:3001/layout/${newValues.id}`, newValues)
+    } catch (err) {
+      console.log(err)
     }
 
-   // localStorage.setItem('users', JSON.stringify(usersReduxArrCopy))*/
-
-    let ref = collection(db, 'studentsTable')
-    let newStudentsArr = onSnapshot(ref, (snapshot) => {
-      let results = []
-      snapshot.docs.forEach((doc) => {
-        results.push({ ...doc.data() })
-      })
-      props.setStudentsData(results)
-      dispatch(updateStudents(results))
-      /* console.log('results', results) */
-    })
+    let newArr = []
+    try {
+      const res = await axios.get('http://localhost:3001/layout')
+      console.log(res.data)
+      newArr.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
+    props.setStudentsData(newArr)
+    dispatch(updateStudents(newArr))
+    props.setCurStudentObj(newValues)
+    props.handleCancel()
 
     props.setCurStudentObj(newValues)
 
-    /*  props.setStudentsData(usersReduxArrCopy) */
     props.handleCancel()
   }
 

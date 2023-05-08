@@ -5,27 +5,24 @@ import { useSelector, useDispatch } from 'react-redux'
 import { db } from '../pages/firebase.js'
 import { login } from '../redux/userSlice.js'
 import { updateCurrentUser } from '../redux/currentUserSlice.js'
+import axios from 'axios'
 
 export default function UserInfo() {
   const dispatch = useDispatch()
   let currentUser = useSelector((state) => state.currentUser?.value || [])
-  console.log('@@', typeof currentUser, currentUser)
+  //console.log('@@', typeof currentUser, currentUser)
 
   const updateProfile = async (val) => {
     try {
-      await updateDoc(doc(db, 'users', val.id), val)
-      dispatch(login(val))
+      await axios.put(`http://localhost:3001/layout/UserInfo/${val.id}`, val)
       alert('Profile updated successfully')
-    } catch (error) {
-      return { message: 'Fail to update profile' }
+    } catch (err) {
+      console.log(err)
     }
+    dispatch(login(val))
   }
 
   const onFinish = (values) => {
-    /*  console.log('currentUser0', currentUser0)
-     */
-    /* let currentUser = JSON.parse(localStorage.getItem('currentUser')) */
-    /*use useSelector*/
     const finalVal = {
       ...values,
       uid: currentUser.uid,
@@ -34,15 +31,9 @@ export default function UserInfo() {
       password: currentUser.password,
     }
 
-    // localStorage.setItem('currentUser', JSON.stringify(finalVal))
     dispatch(updateCurrentUser(finalVal))
-    console.log({ finalVal })
 
     updateProfile(finalVal)
-    /*   console.log('line 31')
-
-    console.log('line 33')
-    console.log(finalVal) */
   }
 
   const onFinishFailed = (errorInfo) => {

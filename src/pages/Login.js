@@ -14,6 +14,7 @@ import { updateCourses } from '../redux/coursesSlice.js'
 import './Login.css'
 import { getDocs, collection } from 'firebase/firestore'
 import { updateCurrentUser } from '../redux/currentUserSlice.js'
+import axios from 'axios'
 function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,36 +40,42 @@ function Login() {
     setProvider('google')
   }
 
-  const HandleEmailPassword = async () => {
-    try {
-      let snapshotsData = await logInWithEmailAndPassword(email, password)
-      // console.log('xxx= ', snapshotsData)
-      dispatch(updateCurrentUser(snapshotsData))
-      // const userInfo = JSON.parse(localStorage.getItem('currentUser'))
-      // console.log('userInfo', userInfo)
-      dispatch(login({ ...snapshotsData, loggedIn: true }))
-
-      let tempStudents = []
-      const ref = collection(db, 'studentsTable')
-      await getDocs(ref).then((snapshot) =>
-        snapshot.docs.forEach((doc) => {
-          tempStudents.push({ ...doc.data() })
-        })
-      )
-      dispatch(updateStudents(tempStudents))
-      setProvider('email')
-    } catch (error) {
-      console.log(error)
-    }
-
-    let tempCourses = []
-    const ref = collection(db, 'coursesTable')
-    await getDocs(ref).then((snapshot) =>
-      snapshot.docs.forEach((doc) => {
-        tempCourses.push({ ...doc.data() })
+  const HandleEmailPassword = async (e) => {
+    e.preventDefault()
+    axios
+      .post('http://localhost:3001', {
+        email: email,
+        password: password,
       })
-    )
-    dispatch(updateCourses(tempCourses))
+      .then((response) => {
+        if (!response.data.message) {
+          console.log(response.data[0])
+          dispatch(updateCurrentUser(response.data[0]))
+          dispatch(login({ ...response.data[0], loggedIn: true }))
+          navigate('/layout')
+        }
+      })
+
+    let allStudents = []
+    try {
+      const res = await axios.get('http://localhost:3001/layout')
+      console.log(res.data)
+      allStudents.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
+    dispatch(updateStudents(allStudents))
+    setProvider('email')
+
+    let allCourses = []
+    try {
+      const res = await axios.get('http://localhost:3001/layout/CoursesInfo')
+      console.log(res.data)
+      allCourses.push(...res.data)
+    } catch (err) {
+      console.log(err)
+    }
+    dispatch(updateCourses(allCourses))
   }
 
   return (
